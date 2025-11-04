@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -27,6 +27,7 @@
       border: 4px solid #ff758f;
       margin: 0 auto 1rem auto;
       display: block;
+      object-fit: cover;
     }
     h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
     p { font-size: 1rem; margin-bottom: 1.5rem; }
@@ -44,98 +45,61 @@
     .btn:hover { filter: brightness(1.1); }
   </style>
 
-  <!-- ✅ TikTok Pixel Code Start -->
+  <!-- ✅ TikTok Pixel Code -->
   <script>
   !function (w, d, t) {
     w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-    ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"];
-    ttq.setAndDefer=function(t,e){
-      t[e]=function(){
-        t.push([e].concat(Array.prototype.slice.call(arguments,0)))
-      }
-    };
+    ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+    ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
     for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-    ttq.instance=function(t){
-      for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);
-      return e
-    };
     ttq.load=function(e,n){
-      var r="https://analytics.tiktok.com/i18n/pixel/events.js",
-      o=n&&n.partner;
-      ttq._i=ttq._i||{},
-      ttq._i[e]=[],
-      ttq._i[e]._u=r,
-      ttq._t=ttq._t||{},
-      ttq._t[e]=+new Date,
-      ttq._o=ttq._o||{},
-      ttq._o[e]=n||{};
-      n=document.createElement("script"),
-      n.type="text/javascript",
-      n.async=!0,
-      n.src=r+"?sdkid="+e+"&lib="+t;
-      e=document.getElementsByTagName("script")[0];
-      e.parentNode.insertBefore(n,e)
+      var i="https://analytics.tiktok.com/i18n/pixel/events.js";
+      ttq._i=ttq._i||{},ttq._i[e]=[],ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};
+      var a=document.createElement("script");
+      a.type="text/javascript",a.async=!0,a.src=i+"?sdkid="+e+"&lib="+t;
+      var s=document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(a,s)
     };
-
     ttq.load('D455V8RC77U505N9060G');
     ttq.page();
   }(window, document, 'ttq');
   </script>
   <!-- ✅ TikTok Pixel Code End -->
-
 </head>
+
 <body>
   <div class="container">
-    <img src="foto.png" alt="Jenni" class="circle-img" />
+    <img src="foto.png" alt="Tutorial de acesso" class="circle-img" />
     <h1>🎉 Obrigado pela sua compra!</h1>
     <p>Sua compra foi confirmada. Clique abaixo para entrar no grupo VIP exclusivo:</p>
     <a href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- Purchase Event (dispara apenas uma vez por navegador) -->
+  <!-- ✅ Evento de Compra (TikTok) -->
   <script>
     (function firePurchaseOnce() {
-      var KEY = 'purchaseEventFired_v1';
+      const KEY = 'tiktok_purchase_event_fired_v1';
       if (localStorage.getItem(KEY)) {
-        console.log('Evento de compra já foi disparado anteriormente.');
+        console.log('Evento TikTok já foi disparado.');
         return;
       }
 
       function sendPurchase() {
         try {
-          fbq('track', 'Purchase', {
+          ttq.track('CompletePayment', {
             value: 18.00,
             currency: 'BRL',
-            content_ids: ['produto_vip'],
-            content_type: 'product'
+            contents: [{ content_id: 'produto_vip', content_type: 'product' }]
           });
-
-          // 🔹 Também dispara o evento de compra no TikTok
-          if (typeof ttq === 'object' && typeof ttq.track === 'function') {
-            ttq.track('CompletePayment', {
-              value: 18.00,
-              currency: 'BRL',
-              contents: [{ content_id: 'produto_vip', content_type: 'product' }]
-            });
-          }
-
           localStorage.setItem(KEY, 'true');
-          console.log('Evento de compra disparado com sucesso (FB + TikTok).');
-        } catch (e) {
-          console.warn('Falha ao disparar Purchase:', e);
+          console.log('✅ Evento CompletePayment disparado com sucesso!');
+        } catch (err) {
+          console.warn('Erro ao disparar evento TikTok:', err);
         }
       }
 
-      if (typeof fbq === 'function' || (typeof ttq === 'object')) {
-        window.addEventListener('load', function(){ setTimeout(sendPurchase, 300); });
-      } else {
-        var tries = 0, iv = setInterval(function(){
-          if ((typeof fbq === 'function' && typeof ttq === 'object') || ++tries > 40) {
-            clearInterval(iv);
-            sendPurchase();
-          }
-        }, 100);
-      }
+      // dispara rápido após o carregamento
+      window.addEventListener('load', () => setTimeout(sendPurchase, 300));
     })();
   </script>
 </body>
