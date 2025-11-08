@@ -44,7 +44,7 @@
     .btn:hover { filter: brightness(1.1); }
   </style>
 
-  <!-- TikTok Pixel Code Start (SEU NOVO PIXEL) -->
+  <!-- TikTok Pixel Code Start (Client-Side) - NOVO PIXEL -->
   <script>
     !function (w, d, t) {
       w.TiktokAnalyticsObject=t;
@@ -72,45 +72,116 @@
     <img src="foto.png" alt="Tutorial de acesso" class="circle-img" />
     <h1>Obrigado pela sua compra!</h1>
     <p>Sua compra foi confirmada. Clique abaixo para entrar no grupo VIP exclusivo:</p>
-    <a href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
+    <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- Evento de Compra (TikTok) - Dispara apenas 1x -->
+  <!-- TikTok Events API (Server-Side) + Purchase Event -->
   <script>
-    (function firePurchaseOnce() {
-      const KEY = 'tiktok_purchase_event_fired_v1';
-      if (localStorage.getItem(KEY)) {
-        console.log('Evento TikTok já foi disparado.');
+    const TIKTOK_PIXEL_ID = 'D478L63C77U1BLONNB2G';
+    const TIKTOK_ACCESS_TOKEN = 'e84e20422383ee7292b2f1617eb56073ff1662e9';
+    const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
+
+    // Função para enviar evento Server-Side
+    async function sendTikTokServerEvent(eventName, properties = {}) {
+      const payload = {
+        pixel_code: TIKTOK_PIXEL_ID,
+        event: eventName,
+        timestamp: new Date().toISOString(),
+        event_id: `${eventName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        context: {
+          user_agent: navigator.userAgent,
+          ip: '',
+          user: {
+            external_id: '',
+            phone_number: '',
+            email: ''
+          },
+          page: {
+            url: window.location.href,
+            referrer: document.referrer
+          }
+        },
+        properties: {
+          content_type: 'product',
+          content_id: 'produto_vip',
+          content_name: 'Acesso VIP - Vazadinhos das Famosas',
+          currency: 'BRL',
+          value: 18.00,
+          ...properties
+        }
+      };
+
+      try {
+        const response = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Access-Token': TIKTOK_ACCESS_TOKEN,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          console.log(`[TikTok Server] ${eventName} enviado com sucesso.`);
+        } else {
+          console.error(`[TikTok Server] Erro ${eventName}:`, await response.text());
+        }
+      } catch (err) {
+        console.error('[TikTok Server] Falha na requisição:', err);
+      }
+    }
+
+    // Dispara eventos apenas UMA VEZ por navegador
+    (function fireEventsOnce() {
+      const PURCHASE_KEY = 'tiktok_purchase_fired_v3';
+      if (localStorage.getItem(PURCHASE_KEY)) {
+        console.log('Eventos já disparados anteriormente.');
         return;
       }
 
-      function sendPurchase() {
-        try {
-          if (typeof ttq === 'object' && typeof ttq.track === 'function') {
-            ttq.track('CompletePayment', {
-              value: 18.00,
-              currency: 'BRL',
-              contents: [
-                { 
-                  content_id: 'produto_vip', 
-                  content_type: 'product',
-                  content_name: 'Acesso VIP - Vazadinhos das Famosas'
-                }
-              ]
-            });
-            localStorage.setItem(KEY, 'true');
-            console.log('Evento CompletePayment disparado com sucesso!');
-          }
-        } catch (err) {
-          console.warn('Erro ao disparar evento TikTok:', err);
+      function triggerEvents() {
+        // 1. ViewContent
+        sendTikTokServerEvent('ViewContent');
+
+        // 2. Purchase (Server-Side + Client-Side)
+        sendTikTokServerEvent('Purchase', {
+          value: 18.00,
+          currency: 'BRL'
+        });
+
+        // Client-side (backup)
+        if (typeof ttq === 'object' && typeof ttq.track === 'function') {
+          ttq.track('CompletePayment', {
+            value: 18.00,
+            currency: 'BRL',
+            contents: [{
+              content_id: 'produto_vip',
+              content_type: 'product',
+              content_name: 'Acesso VIP - Vazadinhos das Famosas'
+            }]
+          });
         }
+
+        localStorage.setItem(PURCHASE_KEY, 'true');
+        console.log('Todos os eventos de compra disparados (Server + Client).');
       }
 
-      // Garante que o pixel carregou
+      // Aguarda pixel carregar
       window.addEventListener('load', () => {
-        setTimeout(sendPurchase, 500); // Pequeno delay para garantir
+        setTimeout(triggerEvents, 600);
       });
     })();
+
+    // 3. CompleteRegistration ao clicar no botão
+    document.getElementById('telegram-btn').addEventListener('click', () => {
+      sendTikTokServerEvent('CompleteRegistration', {
+        content_name: 'Entrada no Grupo VIP',
+        value: 18.00
+      });
+
+      if (typeof ttq === 'object') {
+        ttq.track('CompleteRegistration');
+      }
+    });
   </script>
 </body>
 </html>
