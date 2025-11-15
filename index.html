@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter',881 sans-serif;
       margin: 0;
       padding: 0;
       background: #fff0f3;
@@ -44,7 +44,7 @@
     .btn:hover { filter: brightness(1.1); }
   </style>
 
-  <!-- TikTok Pixel Code Start (NOVO PIXEL) -->
+  <!-- TikTok Pixel Code Start -->
   <script>
     !function (w, d, t) {
       w.TiktokAnalyticsObject=t;
@@ -75,7 +75,7 @@
     <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- TikTok Events API (Server-Side) + Purchase Event -->
+  <!-- TikTok Events API (Server-Side) + Purchase Event com VALIDAÇÃO EXTRA -->
   <script>
     const TIKTOK_PIXEL_ID = 'D4CAJIRC77U8LSGFOIJ0';
     const TIKTOK_ACCESS_TOKEN = '96e61088084e67622a5475353c8557c9f1badcaf';
@@ -86,12 +86,14 @@
       return `${eventName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    // Função para enviar evento Server-Side
+    // Função para enviar evento Server-Side com VALIDAÇÃO COMPLETA
     async function sendTikTokServerEvent(eventName, properties = {}) {
+      const eventId = generateEventId(eventName);
+
       const payload = {
         pixel_code: TIKTOK_PIXEL_ID,
         event: eventName,
-        event_id: generateEventId(eventName),
+        event_id: eventId,
         timestamp: new Date().toISOString(),
         context: {
           user_agent: navigator.userAgent,
@@ -116,6 +118,18 @@
         }
       };
 
+      // VALIDAÇÃO EXTRA ANTES DO ENVIO
+      if (!payload.properties.content_id || payload.properties.content_id.trim() === '') {
+        console.error('[TikTok ERRO] content_id está vazio! Evento bloqueado.');
+        return;
+      }
+      if (!payload.properties.value || !payload.properties.currency) {
+        console.error('[TikTok ERRO] value ou currency ausentes!');
+        return;
+      }
+
+      console.log(`[TikTok ENVIO] Enviando ${eventName}...`, { event_id: eventId, value: payload.properties.value });
+
       try {
         const response = await fetch(API_ENDPOINT, {
           method: 'POST',
@@ -127,21 +141,23 @@
         });
 
         const result = await response.json();
+        console.log(`[TikTok RESPOSTA] ${eventName}:`, result); // LOG COMPLETO
+
         if (response.ok && result.code === 0) {
-          console.log(`[TikTok Server] ${eventName} enviado com sucesso!`);
+          console.log(`[TikTok SUCESSO] ${eventName} marcado! ID: ${eventId}`);
         } else {
-          console.error(`[TikTok Server] Erro ${eventName}:`, result);
+          console.error(`[TikTok FALHA] Erro no ${eventName}:`, result.message || result);
         }
       } catch (err) {
-        console.error('[TikTok Server] Falha:', err);
+        console.error('[TikTok FALHA CRÍTICA] Erro de rede:', err);
       }
     }
 
     // Dispara eventos apenas UMA VEZ por navegador
     (function fireEventsOnce() {
-      const PURCHASE_KEY = 'tiktok_purchase_fired_v11'; // Atualizado para evitar conflito
+      const PURCHASE_KEY = 'tiktok_purchase_fired_v12'; // Nova versão
       if (localStorage.getItem(PURCHASE_KEY)) {
-        console.log('Eventos já disparados anteriormente.');
+        console.log('Eventos já disparados anteriormente (bloqueado por localStorage).');
         return;
       }
 
@@ -166,10 +182,11 @@
               content_name: 'Acesso VIP - Vazadinhos das Famosas'
             }]
           });
+          console.log('[TikTok Client] CompletePayment disparado (backup)');
         }
 
         localStorage.setItem(PURCHASE_KEY, 'true');
-        console.log('Todos os eventos de compra disparados (Server + Client).');
+        console.log('Todos os eventos disparados com sucesso (v12).');
       }
 
       // Aguarda pixel carregar
