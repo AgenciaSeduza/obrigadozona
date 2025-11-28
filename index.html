@@ -15,9 +15,10 @@
     .btn:hover {filter:brightness(1.1)}
   </style>
 
-  <!-- TikTok Pixel -->
+  <!-- NOVO PIXEL TIKTOK: D4KUUQ3C77U4IAHDO5BG -->
   <script>
-    !function (w, d, t) {w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.load=function(e){var r="https://analytics.tiktok.com/i18n/pixel/events.js";var n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;var e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};ttq.load('D455V8RC77U505N9060G');ttq.page();}(window, document, 'ttq');
+    !function (w, d, t) {
+      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.load=function(e){var r="https://analytics.tiktok.com/i18n/pixel/events.js";var n=document.createElement("script");n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;var e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};ttq.load('D4KUUQ3C77U4IAHDO5BG');ttq.page();}(window, document, 'ttq');
   </script>
 </head>
 <body>
@@ -29,11 +30,11 @@
   </div>
 
   <script>
-    const TIKTOK_PIXEL_ID = 'D455V8RC77U505N9060G';
-    const TIKTOK_ACCESS_TOKEN = '3ca706076f67309a1e205e3f1f5d9aed0acef913';
+    const TIKTOK_PIXEL_ID = 'D4KUUQ3C77U4IAHDO5BG';
+    const TIKTOK_ACCESS_TOKEN = 'f56c285ef22d3ad08db429e68c247ed2fc02f108';
     const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 
-    // === PEGA DADOS DA URL (Hotmart, Kiwify, Braip, Monetizze, etc) ===
+    // === PEGA DADOS DA URL (Hotmart, Kiwify, Braip, Monetizze etc) ===
     const urlParams = new URLSearchParams(window.location.search);
     const rawEmail = (urlParams.get('email') || urlParams.get('buyer_email') || urlParams.get('customer_email') || '').toLowerCase().trim();
     const transactionId = urlParams.get('transaction') || urlParams.get('transacao') || urlParams.get('order_id') || urlParams.get('transaction_id') || '';
@@ -43,29 +44,26 @@
     const phoneE164 = phone ? '+' + phone : '';
     const externalId = transactionId || rawEmail || 'guest_' + Date.now();
 
-    // Valor dinâmico (14,90 ou 29,90)
     const urlValue = parseFloat(urlParams.get('value') || urlParams.get('price') || urlParams.get('amount') || '18.00');
     const value = isNaN(urlValue) ? 18.00 : urlValue;
 
-    // Hash do e-mail
+    // Hash do e-mail (SHA-256)
     async function sha256(str) {
       if (!str) return '';
       const buffer = new TextEncoder().encode(str);
       const hash = await crypto.subtle.digest('SHA-256', buffer);
       return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    let hashedEmail = rawEmail ? await sha256(rawEmail) : '';
 
     // Gera event_id único
     function generateEventId(name) {
       return `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    // Envia evento com TODOS os identificadores (EMQ 95+)
+    // Envia evento com todos os identificadores (EMQ altíssimo)
     async function sendTikTokServerEvent(eventName, extraProps = {}) {
       const eventId = generateEventId(eventName);
-      hashedEmail = hashedEmail || (rawEmail ? await sha256(rawEmail) : '');
-
+      const hashedEmail = rawEmail ? await sha256(rawEmail) : '';
       const payload = {
         pixel_code: TIKTOK_PIXEL_ID,
         event: eventName,
@@ -91,8 +89,6 @@
         }
       };
 
-      console.log(`[TikTok] Enviando ${eventName} com value R$${value}`, payload.context.user);
-
       try {
         const res = await fetch(API_ENDPOINT, {
           method: 'POST',
@@ -101,22 +97,21 @@
         });
         const json = await res.json();
         if (res.ok && json.code === 0) console.log(`[TikTok OK] ${eventName} marcado!`);
-        else console.error(`[TikTok ERRO] ${eventName}`, json);
-      } catch (e) { console.error('[TikTok FALHA]', e); }
+      } catch (e) {}
     }
 
-    // === DISPARA EVENTOS (1x só) ===
+    // === DISPARA EVENTOS 1x só ===
     (function() {
-      if (localStorage.getItem('tiktok_fired_v14')) return;
+      if (localStorage.getItem('tiktok_fired_v15')) return;
       setTimeout(async () => {
         await sendTikTokServerEvent('ViewContent');
         await sendTikTokServerEvent('Purchase');
         if (window.ttq) ttq.track('CompletePayment', { value, currency: 'BRL', content_id: 'produto_vip' });
-        localStorage.setItem('tiktok_fired_v14', 'true');
+        localStorage.setItem('tiktok_fired_v15', 'true');
       }, 800);
     })();
 
-    // CompleteRegistration no clique
+    // CompleteRegistration no clique do Telegram
     document.getElementById('telegram-btn').addEventListener('click', async () => {
       await sendTikTokServerEvent('CompleteRegistration', { value });
       if (window.ttq) ttq.track('CompleteRegistration', { value, currency: 'BRL', content_id: 'produto_vip' });
