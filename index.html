@@ -2,20 +2,65 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Obrigado pela Compra!</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap" rel="stylesheet">
+
   <style>
-    body {font-family:'Inter',sans-serif;margin:0;padding:0;background:#fff0f3;text-align:center;color:#333}
-    .container {max-width:500px;margin:0 auto;padding:2rem}
-    .circle-img {width:120px;height:120px;border-radius:50%;border:4px solid #ff758f;margin:0 auto 1rem;display:block;object-fit:cover}
-    h1 {font-size:1.8rem;margin-bottom:.5rem}
-    p {font-size:1rem;margin-bottom:1.5rem}
-    .btn {background:#229ED9;color:#fff;padding:.8rem 1.6rem;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;margin-top:1rem;transition:.2s}
-    .btn:hover {filter:brightness(1.1)}
+    body {
+      font-family:'Inter',sans-serif;
+      margin:0;
+      padding:0;
+      background:#fff0f3;
+      text-align:center;
+      color:#333;
+    }
+
+    .container {
+      max-width:500px;
+      margin:0 auto;
+      padding:2rem;
+    }
+
+    .circle-img {
+      width:120px;
+      height:120px;
+      border-radius:50%;
+      border:4px solid #ff758f;
+      margin:0 auto 1rem;
+      display:block;
+      object-fit:cover;
+    }
+
+    h1 {
+      font-size:1.8rem;
+      margin-bottom:.5rem
+    }
+
+    p {
+      font-size:1rem;
+      margin-bottom:1.5rem
+    }
+
+    .btn {
+      background:#229ED9;
+      color:#fff;
+      padding:.8rem 1.6rem;
+      text-decoration:none;
+      border-radius:8px;
+      font-weight:bold;
+      display:inline-block;
+      margin-top:1rem;
+      transition:.2s
+    }
+
+    .btn:hover {
+      filter:brightness(1.1)
+    }
   </style>
 </head>
 <body>
+
   <div class="container">
     <img src="foto.png" alt="Tutorial de acesso" class="circle-img" />
     <h1>Obrigado pela sua compra!</h1>
@@ -23,56 +68,102 @@
     <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- APENAS API EVENTS (SEM SDK) - PIXEL NOVO D4O86QJC77UEBGID73OG -->
+
+  <!-- TIKTOK EVENTS API (SEM PIXEL NO FRONT) -->
   <script>
-    const PIXEL_ID = 'D4O86QJC77UEBGID73OG';
+    const PIXEL_ID     = 'D4O86QJC77UEBGID73OG';
     const ACCESS_TOKEN = '028dca20c2fb5dd89d0631849005823bcd422181';
     const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 
-    // === PEGA DADOS DA URL ===
-    const urlParams = new URLSearchParams(window.location.search);
-    const rawEmail = (urlParams.get('email') || urlParams.get('buyer_email') || urlParams.get('customer_email') || '').toLowerCase().trim();
-    const transactionId = urlParams.get('transaction') || urlParams.get('transacao') || urlParams.get('order_id') || urlParams.get('transaction_id') || '';
-    let phone = (urlParams.get('phone') || urlParams.get('buyer_phone') || urlParams.get('customer_phone') || '').replace(/\D/g, '');
-    if (phone.length === 11) phone = '55' + phone;
-    if (phone.length === 10) phone = '55' + phone;
-    const phoneE164 = phone ? '+' + phone : '';
-    const urlValue = parseFloat(urlParams.get('value') || urlParams.get('price') || urlParams.get('amount') || '18.00');
-    const value = isNaN(urlValue) ? 18.00 : urlValue;
+    // ==========================
+    // CAPTURA DADOS DA URL
+    // ==========================
 
-    async function sha256(str) {
-      if (!str) return '';
-      const buffer = new TextEncoder().encode(str);
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const rawEmail =
+      (urlParams.get('email') ||
+       urlParams.get('buyer_email') ||
+       urlParams.get('customer_email') ||
+       '').trim().toLowerCase();
+
+    let phone =
+      (urlParams.get('phone') ||
+       urlParams.get('buyer_phone') ||
+       urlParams.get('customer_phone') ||
+       '').replace(/\D/g, '');
+
+    if (phone.length === 10 || phone.length === 11) {
+      phone = '55' + phone;
+    }
+
+    const phoneE164 = phone ? `+${phone}` : '';
+
+    const transactionId =
+      urlParams.get('transaction') ||
+      urlParams.get('transaction_id') ||
+      urlParams.get('order_id') ||
+      `anon_${Date.now()}`;
+
+    const value = parseFloat(
+      urlParams.get('value') ||
+      urlParams.get('price') ||
+      urlParams.get('amount') ||
+      '18.00'
+    );
+
+    const finalValue = isNaN(value) ? 18.00 : value;
+
+    // ==========================
+    // FUNÇÕES AUXILIARES
+    // ==========================
+
+    async function sha256(data) {
+      if (!data) return '';
+      const buffer = new TextEncoder().encode(data);
       const hash = await crypto.subtle.digest('SHA-256', buffer);
-      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+      return Array.from(new Uint8Array(hash))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    function unixTimestamp() {
+      return Math.floor(Date.now() / 1000);
     }
 
     function generateEventId(name) {
-      return `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      return `${name}_${transactionId}_${Date.now()}`;
     }
 
-    async function send(eventName, extra = {}) {
+    async function sendEvent(eventName, extra = {}) {
+
       const hashedEmail = rawEmail ? await sha256(rawEmail) : '';
+      const hashedPhone = phoneE164 ? await sha256(phoneE164) : '';
+
       const payload = {
         pixel_code: PIXEL_ID,
         event: eventName,
         event_id: generateEventId(eventName),
-        timestamp: new Date().toISOString(),
+        timestamp: unixTimestamp(),
+
         context: {
           user_agent: navigator.userAgent,
-          user: {
-            external_id: transactionId ? [transactionId] : [],
-            phone_number: phoneE164 ? [phoneE164] : [],
-            email: hashedEmail ? [hashedEmail] : []
+          page: {
+            url: location.href
           },
-          page: { url: location.href }
+          user: {
+            external_id: [transactionId],
+            ...(hashedEmail && { email: [hashedEmail] }),
+            ...(hashedPhone && { phone_number: [hashedPhone] })
+          }
         },
+
         properties: {
-          content_type: 'product_group',
-          content_id: 'GRUPO_VIP_001',
-          content_name: 'Acesso VIP Exclusivo',
-          currency: 'BRL',
-          value: value,
+          content_type: "product",
+          content_id: "VIP_001",
+          content_name: "Acesso Grupo VIP",
+          currency: "BRL",
+          value: finalValue,
           ...extra
         }
       };
@@ -86,23 +177,46 @@
           },
           body: JSON.stringify(payload)
         });
-      } catch (e) {}
+
+        console.log(`✅ Evento enviado: ${eventName}`);
+
+      } catch (err) {
+        console.error("❌ Erro ao enviar evento TikTok:", err);
+      }
     }
 
-    // Purchase + ViewContent (1x por visitante)
-    (function() {
-      if (localStorage.getItem('tt_purchase_2025_final')) return;
-      setTimeout(async () => {
-        await send('ViewContent');
-        await send('Purchase');
-        localStorage.setItem('tt_purchase_2025_final', '1');
-      }, 800);
-    })();
 
-    // CompleteRegistration no clique do botão Telegram
-    document.getElementById('telegram-btn').addEventListener('click', () => {
-      send('CompleteRegistration');
+    // ==========================
+    // ENVIO AUTOMÁTICO
+    // ==========================
+
+    const storageKey = `tt_purchase_${transactionId}`;
+
+    if (!localStorage.getItem(storageKey)) {
+
+      setTimeout(async () => {
+
+        await sendEvent('ViewContent');
+
+        await sendEvent('Purchase', {
+          num_items: 1
+        });
+
+        localStorage.setItem(storageKey, '1');
+
+      }, 1000);
+    }
+
+
+    // ==========================
+    // EVENTO AO ENTRAR NO TELEGRAM
+    // ==========================
+
+    document.getElementById('telegram-btn').addEventListener('click', function() {
+      sendEvent('CompleteRegistration');
     });
+
   </script>
+
 </body>
 </html>
