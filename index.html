@@ -15,15 +15,15 @@
     .btn:hover {filter:brightness(1.1)}
   </style>
 
-  <!-- TikTok Pixel Atualizado -->
+  <!-- PIXEL SDK OFICIAL (PERMITIDO NA PÁGINA DE OBRIGADO) -->
   <script>
     !function (w, d, t) {
-      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],
+      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
+      ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],
       ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
       for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-      ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},
       ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=r+"?sdkid="+e+"&lib="+t;var i=document.getElementsByTagName("script")[0];i.parentNode.insertBefore(a,i)};
-      ttq.load('D4MTB8JC77U7MI8IOAHG');
+      ttq.load('D4O86QJC77UEBGID73OG');
       ttq.page();
     }(window, document, 'ttq');
   </script>
@@ -36,13 +36,13 @@
     <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- TikTok Events API com seu token atualizado -->
+  <!-- API EVENTS ATUALIZADA - NOVO PIXEL + NOVO TOKEN -->
   <script>
-    const PIXEL_ID = 'D4MTB8JC77U7MI8IOAHG';
-    const ACCESS_TOKEN = '11bdcd7657bd2109cbcc32d186145183304036e3';
+    const PIXEL_ID = 'D4O86QJC77UEBGID73OG';
+    const ACCESS_TOKEN = '028dca20c2fb5dd89d0631849005823bcd422181';
     const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 
-    // === PEGA DADOS DA URL ===
+    // === PEGA DADOS DA URL (Hotmart, Kiwify, Braip, etc) ===
     const urlParams = new URLSearchParams(window.location.search);
     const rawEmail = (urlParams.get('email') || urlParams.get('buyer_email') || urlParams.get('customer_email') || '').toLowerCase().trim();
     const transactionId = urlParams.get('transaction') || urlParams.get('transacao') || urlParams.get('order_id') || urlParams.get('transaction_id') || '';
@@ -64,24 +64,21 @@
       return `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    async function sendTikTokServerEvent(eventName, extraProps = {}) {
-      const eventId = generateEventId(eventName);
+    async function sendServerEvent(eventName, extraProps = {}) {
       const hashedEmail = rawEmail ? await sha256(rawEmail) : '';
-
       const payload = {
         pixel_code: PIXEL_ID,
         event: eventName,
-        event_id: eventId,
+        event_id: generateEventId(eventName),
         timestamp: new Date().toISOString(),
         context: {
           user_agent: navigator.userAgent,
-          ip: '',
           user: {
             external_id: transactionId ? [transactionId] : [],
             phone_number: phoneE164 ? [phoneE164] : [],
             email: hashedEmail ? [hashedEmail] : []
           },
-          page: { url: window.location.href, referrer: document.referrer || '' }
+          page: { url: location.href }
         },
         properties: {
           content_type: 'product_group',
@@ -105,32 +102,21 @@
       } catch (e) {}
     }
 
-    // === DISPARA PURCHASE E VIEWCONTENT (1x por visitante) ===
+    // Purchase + ViewContent (1x por visitante)
     (function() {
-      if (localStorage.getItem('tiktok_purchase_fired_2025')) return;
-
+      if (localStorage.getItem('tt_purchase_2025_v3')) return;
       setTimeout(async () => {
-        await sendTikTokServerEvent('ViewContent');
-        await sendTikTokServerEvent('Purchase', { value: value });
-
-        if (window.ttq) {
-          ttq.track('Purchase', {
-            content_id: 'GRUPO_VIP_001',
-            content_type: 'product_group',
-            value: value,
-            currency: 'BRL'
-          });
-        }
-        localStorage.setItem('tiktok_purchase_fired_2025', 'true');
+        await sendServerEvent('ViewContent');
+        await sendServerEvent('Purchase');
+        if (window.ttq) ttq.track('Purchase', { value: value, currency: 'BRL' });
+        localStorage.setItem('tt_purchase_2025_v3', '1');
       }, 800);
     })();
 
-    // === DISPARA COMPLETEREGISTRATION NO CLIQUE DO BOTÃO ===
+    // CompleteRegistration no clique do Telegram
     document.getElementById('telegram-btn').addEventListener('click', async () => {
-      await sendTikTokServerEvent('CompleteRegistration', { value: value });
-      if (window.ttq) {
-        ttq.track('CompleteRegistration', { value: value, currency: 'BRL' });
-      }
+      await sendServerEvent('CompleteRegistration');
+      if (window.ttq) ttq.track('CompleteRegistration', { value: value, currency: 'BRL' });
     });
   </script>
 </body>
