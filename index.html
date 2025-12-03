@@ -14,19 +14,6 @@
     .btn {background:#229ED9;color:#fff;padding:.8rem 1.6rem;text-decoration:none;border-radius:8px;font-weight:bold;display:inline-block;margin-top:1rem;transition:.2s}
     .btn:hover {filter:brightness(1.1)}
   </style>
-
-  <!-- PIXEL SDK OFICIAL (PERMITIDO NA PÁGINA DE OBRIGADO) -->
-  <script>
-    !function (w, d, t) {
-      w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
-      ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],
-      ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
-      for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
-      ttq.load=function(e,n){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=r+"?sdkid="+e+"&lib="+t;var i=document.getElementsByTagName("script")[0];i.parentNode.insertBefore(a,i)};
-      ttq.load('D4O86QJC77UEBGID73OG');
-      ttq.page();
-    }(window, document, 'ttq');
-  </script>
 </head>
 <body>
   <div class="container">
@@ -36,13 +23,13 @@
     <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
   </div>
 
-  <!-- API EVENTS ATUALIZADA - NOVO PIXEL + NOVO TOKEN -->
+  <!-- APENAS API EVENTS (SEM SDK) - PIXEL NOVO D4O86QJC77UEBGID73OG -->
   <script>
     const PIXEL_ID = 'D4O86QJC77UEBGID73OG';
     const ACCESS_TOKEN = '028dca20c2fb5dd89d0631849005823bcd422181';
     const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
 
-    // === PEGA DADOS DA URL (Hotmart, Kiwify, Braip, etc) ===
+    // === PEGA DADOS DA URL ===
     const urlParams = new URLSearchParams(window.location.search);
     const rawEmail = (urlParams.get('email') || urlParams.get('buyer_email') || urlParams.get('customer_email') || '').toLowerCase().trim();
     const transactionId = urlParams.get('transaction') || urlParams.get('transacao') || urlParams.get('order_id') || urlParams.get('transaction_id') || '';
@@ -64,7 +51,7 @@
       return `${name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
-    async function sendServerEvent(eventName, extraProps = {}) {
+    async function send(eventName, extra = {}) {
       const hashedEmail = rawEmail ? await sha256(rawEmail) : '';
       const payload = {
         pixel_code: PIXEL_ID,
@@ -86,7 +73,7 @@
           content_name: 'Acesso VIP Exclusivo',
           currency: 'BRL',
           value: value,
-          ...extraProps
+          ...extra
         }
       };
 
@@ -104,19 +91,17 @@
 
     // Purchase + ViewContent (1x por visitante)
     (function() {
-      if (localStorage.getItem('tt_purchase_2025_v3')) return;
+      if (localStorage.getItem('tt_purchase_2025_final')) return;
       setTimeout(async () => {
-        await sendServerEvent('ViewContent');
-        await sendServerEvent('Purchase');
-        if (window.ttq) ttq.track('Purchase', { value: value, currency: 'BRL' });
-        localStorage.setItem('tt_purchase_2025_v3', '1');
+        await send('ViewContent');
+        await send('Purchase');
+        localStorage.setItem('tt_purchase_2025_final', '1');
       }, 800);
     })();
 
-    // CompleteRegistration no clique do Telegram
-    document.getElementById('telegram-btn').addEventListener('click', async () => {
-      await sendServerEvent('CompleteRegistration');
-      if (window.ttq) ttq.track('CompleteRegistration', { value: value, currency: 'BRL' });
+    // CompleteRegistration no clique do botão Telegram
+    document.getElementById('telegram-btn').addEventListener('click', () => {
+      send('CompleteRegistration');
     });
   </script>
 </body>
