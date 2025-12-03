@@ -32,15 +32,8 @@
       object-fit:cover;
     }
 
-    h1 {
-      font-size:1.8rem;
-      margin-bottom:.5rem
-    }
-
-    p {
-      font-size:1rem;
-      margin-bottom:1.5rem
-    }
+    h1 {font-size:1.8rem;margin-bottom:.5rem}
+    p {font-size:1rem;margin-bottom:1.5rem}
 
     .btn {
       background:#229ED9;
@@ -54,167 +47,113 @@
       transition:.2s
     }
 
-    .btn:hover {
-      filter:brightness(1.1)
-    }
+    .btn:hover {filter:brightness(1.1)}
   </style>
 </head>
 <body>
 
   <div class="container">
     <img src="foto.png" alt="Tutorial de acesso" class="circle-img" />
+
     <h1>Obrigado pela sua compra!</h1>
+
     <p>Sua compra foi confirmada. Clique abaixo para entrar no grupo VIP exclusivo:</p>
-    <a id="telegram-btn" href="https://t.me/+I-pcyWQm0khmYzYx" class="btn">Entrar no Grupo VIP</a>
+
+    <a 
+      id="telegram-btn"
+      href="https://t.me/+I-pcyWQm0khmYzYx" 
+      class="btn">
+      Entrar no Grupo VIP
+    </a>
   </div>
 
 
-  <!-- TIKTOK EVENTS API (SEM PIXEL NO FRONT) -->
+  <!-- ✅ APENAS CONEXÃO COM NETLIFY FUNCTION (NENHUM PIXEL/SDK NO FRONT) -->
   <script>
-    const PIXEL_ID     = 'D4O86QJC77UEBGID73OG';
-    const ACCESS_TOKEN = '028dca20c2fb5dd89d0631849005823bcd422181';
-    const API_ENDPOINT = 'https://business-api.tiktok.com/open_api/v1.3/event/track/';
-
     // ==========================
     // CAPTURA DADOS DA URL
     // ==========================
-
     const urlParams = new URLSearchParams(window.location.search);
 
-    const rawEmail =
-      (urlParams.get('email') ||
-       urlParams.get('buyer_email') ||
-       urlParams.get('customer_email') ||
-       '').trim().toLowerCase();
+    const data = {
+      email:
+        (urlParams.get('email') ||
+        urlParams.get('buyer_email') ||
+        urlParams.get('customer_email') ||
+        '').trim().toLowerCase(),
 
-    let phone =
-      (urlParams.get('phone') ||
-       urlParams.get('buyer_phone') ||
-       urlParams.get('customer_phone') ||
-       '').replace(/\D/g, '');
+      phone:
+        (urlParams.get('phone') ||
+        urlParams.get('buyer_phone') ||
+        urlParams.get('customer_phone') ||
+        '').replace(/\D/g, ''),
 
-    if (phone.length === 10 || phone.length === 11) {
-      phone = '55' + phone;
+      transaction_id:
+        urlParams.get('transaction') ||
+        urlParams.get('transaction_id') ||
+        urlParams.get('order_id') ||
+        `anon_${Date.now()}`,
+
+      value: parseFloat(
+        urlParams.get('value') ||
+        urlParams.get('price') ||
+        urlParams.get('amount') ||
+        '18.00'
+      ) || 18.00
+    };
+
+    if (data.phone.length === 10 || data.phone.length === 11) {
+      data.phone = '55' + data.phone;
     }
 
-    const phoneE164 = phone ? `+${phone}` : '';
-
-    const transactionId =
-      urlParams.get('transaction') ||
-      urlParams.get('transaction_id') ||
-      urlParams.get('order_id') ||
-      `anon_${Date.now()}`;
-
-    const value = parseFloat(
-      urlParams.get('value') ||
-      urlParams.get('price') ||
-      urlParams.get('amount') ||
-      '18.00'
-    );
-
-    const finalValue = isNaN(value) ? 18.00 : value;
 
     // ==========================
-    // FUNÇÕES AUXILIARES
+    // ENVIA EVENTOS PARA A NETLIFY FUNCTION
     // ==========================
-
-    async function sha256(data) {
-      if (!data) return '';
-      const buffer = new TextEncoder().encode(data);
-      const hash = await crypto.subtle.digest('SHA-256', buffer);
-      return Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    }
-
-    function unixTimestamp() {
-      return Math.floor(Date.now() / 1000);
-    }
-
-    function generateEventId(name) {
-      return `${name}_${transactionId}_${Date.now()}`;
-    }
-
     async function sendEvent(eventName, extra = {}) {
-
-      const hashedEmail = rawEmail ? await sha256(rawEmail) : '';
-      const hashedPhone = phoneE164 ? await sha256(phoneE164) : '';
-
-      const payload = {
-        pixel_code: PIXEL_ID,
-        event: eventName,
-        event_id: generateEventId(eventName),
-        timestamp: unixTimestamp(),
-
-        context: {
-          user_agent: navigator.userAgent,
-          page: {
-            url: location.href
-          },
-          user: {
-            external_id: [transactionId],
-            ...(hashedEmail && { email: [hashedEmail] }),
-            ...(hashedPhone && { phone_number: [hashedPhone] })
-          }
-        },
-
-        properties: {
-          content_type: "product",
-          content_id: "VIP_001",
-          content_name: "Acesso Grupo VIP",
-          currency: "BRL",
-          value: finalValue,
-          ...extra
-        }
-      };
-
       try {
-        await fetch(API_ENDPOINT, {
+        const res = await fetch('/.netlify/functions/tiktok-event', {
           method: 'POST',
-          headers: {
-            'Access-Token': ACCESS_TOKEN,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: eventName,
+            ...data,
+            ...extra,
+            page: window.location.href
+          })
         });
 
-        console.log(`✅ Evento enviado: ${eventName}`);
+        const json = await res.json();
+        console.log('✅ Evento enviado:', eventName, json);
 
       } catch (err) {
-        console.error("❌ Erro ao enviar evento TikTok:", err);
+        console.error('❌ Erro ao enviar evento para Netlify:', err);
       }
     }
 
 
     // ==========================
-    // ENVIO AUTOMÁTICO
+    // ENVIO AUTOMÁTICO (1x POR TRANSAÇÃO)
     // ==========================
-
-    const storageKey = `tt_purchase_${transactionId}`;
+    const storageKey = `tt_purchase_${data.transaction_id}`;
 
     if (!localStorage.getItem(storageKey)) {
-
       setTimeout(async () => {
-
         await sendEvent('ViewContent');
-
-        await sendEvent('Purchase', {
-          num_items: 1
-        });
-
+        await sendEvent('Purchase', { num_items: 1 });
         localStorage.setItem(storageKey, '1');
-
-      }, 1000);
+      }, 800);
     }
 
 
     // ==========================
-    // EVENTO AO ENTRAR NO TELEGRAM
+    // EVENTO NO BOTÃO TELEGRAM
     // ==========================
-
-    document.getElementById('telegram-btn').addEventListener('click', function() {
-      sendEvent('CompleteRegistration');
-    });
+    document
+      .getElementById('telegram-btn')
+      .addEventListener('click', () => {
+        sendEvent('CompleteRegistration');
+      });
 
   </script>
 
